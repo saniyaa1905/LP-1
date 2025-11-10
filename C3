@@ -1,0 +1,142 @@
+import java.util.*;
+
+
+ class MacroPass1 {
+
+public static void main(String[] args) {
+
+// Input source program
+
+String[] code = {
+
+"MACRO",
+
+"INCR &A",
+
+"ADD &A, =1",
+
+"MEND",
+
+"START",
+
+"INCR DATA",
+
+"END"
+
+};
+
+
+// Data Structures
+
+List<String> MDT = new ArrayList<>(); // Macro Definition Table
+
+Map<String, Integer> MNT = new LinkedHashMap<>(); // Macro Name Table
+
+List<String> intermediateCode = new ArrayList<>();
+
+
+boolean inMacroDef = false;
+
+String currentMacro = null;
+
+int mdtIndex = 1;
+
+
+for (String line : code) {
+
+String[] parts = line.split(" ");
+
+String first = parts[0];
+
+
+if (first.equalsIgnoreCase("MACRO")) {
+
+inMacroDef = true;
+
+continue;
+
+}
+
+
+if (inMacroDef) {
+
+if (first.equalsIgnoreCase("MEND")) {
+
+MDT.add("MEND");
+
+inMacroDef = false;
+
+currentMacro = null;
+
+} else if (currentMacro == null) {
+
+// First line after MACRO — macro name and parameters
+
+currentMacro = parts[0];
+
+MNT.put(currentMacro, MDT.size() + 1);
+
+} else {
+
+MDT.add(line);
+
+}
+
+} else {
+
+intermediateCode.add(line);
+
+}
+
+}
+
+
+// Output: MNT
+
+System.out.println("Macro Name Table (MNT):");
+
+System.out.println("-----------------------");
+
+System.out.println("Index\tMacro Name\tMDT Index");
+
+int i = 1;
+
+for (Map.Entry<String, Integer> entry : MNT.entrySet()) {
+
+System.out.println(i + "\t" + entry.getKey() + "\t\t" + entry.getValue());
+
+i++;
+
+}
+
+
+// Output: MDT
+
+System.out.println("\nMacro Definition Table (MDT):");
+
+System.out.println("-----------------------------");
+
+System.out.println("Index\tDefinition");
+
+for (int j = 0; j < MDT.size(); j++) {
+
+System.out.println((j + 1) + "\t" + MDT.get(j));
+
+}
+
+
+// Output: Intermediate Code
+
+System.out.println("\nIntermediate Code:");
+
+System.out.println("------------------");
+
+for (String s : intermediateCode) {
+
+System.out.println(s);
+
+}
+
+}
+
+}
