@@ -1,0 +1,475 @@
+import java.util.*;
+
+
+class PageReplacementSimulator {
+
+public static void main(String[] args) {
+
+int[] referenceString = {7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2};
+
+int frames = 3;
+
+
+System.out.println("Reference string: " + Arrays.toString(referenceString) + "\n");
+
+
+System.out.println("===== FIFO (3 frames) =====");
+
+simulateFIFO(referenceString, frames);
+
+
+System.out.println("\n===== LRU (3 frames) =====");
+
+simulateLRU(referenceString, frames);
+
+}
+
+
+// ---------- FIFO ----------
+
+static void simulateFIFO(int[] refs, int frameCount) {
+
+int[] frames = new int[frameCount];
+
+Arrays.fill(frames, -1);
+
+int nextReplace = 0; // pointer for FIFO replacement
+
+int pageFaults = 0, hits = 0;
+
+
+System.out.printf("%-4s %-6s %-12s %s%n", "Idx", "Page", "Result", "Frames");
+
+System.out.println("----------------------------------");
+
+for (int i = 0; i < refs.length; i++) {
+
+int page = refs[i];
+
+boolean hit = false;
+
+for (int f = 0; f < frameCount; f++) if (frames[f] == page) { hit = true; break; }
+
+
+if (hit) {
+
+hits++;
+
+System.out.printf("%-4d %-6d %-12s %s%n", i, page, "Hit", framesToString(frames));
+
+} else {
+
+pageFaults++;
+
+// check if there is a free frame
+
+boolean placed = false;
+
+for (int f = 0; f < frameCount; f++) {
+
+if (frames[f] == -1) {
+
+frames[f] = page;
+
+placed = true;
+
+break;
+
+}
+
+}
+
+if (!placed) {
+
+// replace at nextReplace
+
+frames[nextReplace] = page;
+
+nextReplace = (nextReplace + 1) % frameCount;
+
+}
+
+System.out.printf("%-4d %-6d %-12s %s%n", i, page, "Page Fault", framesToString(frames));
+
+}
+
+}
+
+
+System.out.println("----------------------------------");
+
+System.out.println("Total Page Faults: " + pageFaults);
+
+System.out.println("Total Hits: " + hits);
+
+}
+
+
+// ---------- LRU (preemptive LRU replacement, i.e., replace least recently used) ----------
+
+static void simulateLRU(int[] refs, int frameCount) {
+
+int[] frames = new int[frameCount];
+
+Arrays.fill(frames, -1);
+
+// map page -> last used time (integer increasing)
+
+Map<Integer, Integer> lastUsed = new HashMap<>();
+
+int time = 0;
+
+int pageFaults = 0, hits = 0;
+
+
+System.out.printf("%-4s %-6s %-12s %s%n", "Idx", "Page", "Result", "Frames");
+
+System.out.println("----------------------------------");
+
+for (int i = 0; i < refs.length; i++) {
+
+int page = refs[i];
+
+time++;
+
+boolean hit = false;
+
+for (int f = 0; f < frameCount; f++) if (frames[f] == page) { hit = true; break; }
+
+
+if (hit) {
+
+hits++;
+
+lastUsed.put(page, time);
+
+System.out.printf("%-4d %-6d %-12s %s%n", i, page, "Hit", framesToString(frames));
+
+} else {
+
+pageFaults++;
+
+// if free frame exists, use it
+
+boolean placed = false;
+
+for (int f = 0; f < frameCount; f++) {
+
+if (frames[f] == -1) {
+
+frames[f] = page;
+
+placed = true;
+
+break;
+
+}
+
+}
+
+if (!placed) {
+
+// find least recently used page among frames
+
+int lruIndex = -1;
+
+int lruTime = Integer.MAX_VALUE;
+
+for (int f = 0; f < frameCount; f++) {
+
+int p = frames[f];
+
+int lu = lastUsed.getOrDefault(p, 0);
+
+if (lu < lruTime) {
+
+lruTime = lu;
+
+lruIndex = f;
+
+}
+
+}
+
+// replace LRU frame
+
+frames[lruIndex] = page;
+
+}
+
+lastUsed.put(page, time);
+
+System.out.printf("%-4d %-6d %-12s %s%n", i, page, "Page Fault", framesToString(frames));
+
+}
+
+}
+
+
+System.out.println("----------------------------------");
+
+System.out.println("Total Page Faults: " + pageFaults);
+
+System.out.println("Total Hits: " + hits);
+
+}
+
+
+static String framesToString(int[] frames) {
+
+StringBuilder sb = new StringBuilder("[");
+
+for (int i = 0; i < frames.length; i++) {
+
+if (frames[i] == -1) sb.append(" ");
+
+else sb.append(frames[i]);
+
+if (i < frames.length - 1) sb.append(" ");
+
+}
+
+sb.append("]");
+
+return sb.toString();
+
+}
+
+}import java.util.*;
+
+
+class PageReplacementSimulator {
+
+public static void main(String[] args) {
+
+int[] referenceString = {7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2};
+
+int frames = 3;
+
+
+System.out.println("Reference string: " + Arrays.toString(referenceString) + "\n");
+
+
+System.out.println("===== FIFO (3 frames) =====");
+
+simulateFIFO(referenceString, frames);
+
+
+System.out.println("\n===== LRU (3 frames) =====");
+
+simulateLRU(referenceString, frames);
+
+}
+
+
+// ---------- FIFO ----------
+
+static void simulateFIFO(int[] refs, int frameCount) {
+
+int[] frames = new int[frameCount];
+
+Arrays.fill(frames, -1);
+
+int nextReplace = 0; // pointer for FIFO replacement
+
+int pageFaults = 0, hits = 0;
+
+
+System.out.printf("%-4s %-6s %-12s %s%n", "Idx", "Page", "Result", "Frames");
+
+System.out.println("----------------------------------");
+
+for (int i = 0; i < refs.length; i++) {
+
+int page = refs[i];
+
+boolean hit = false;
+
+for (int f = 0; f < frameCount; f++) if (frames[f] == page) { hit = true; break; }
+
+
+if (hit) {
+
+hits++;
+
+System.out.printf("%-4d %-6d %-12s %s%n", i, page, "Hit", framesToString(frames));
+
+} else {
+
+pageFaults++;
+
+// check if there is a free frame
+
+boolean placed = false;
+
+for (int f = 0; f < frameCount; f++) {
+
+if (frames[f] == -1) {
+
+frames[f] = page;
+
+placed = true;
+
+break;
+
+}
+
+}
+
+if (!placed) {
+
+// replace at nextReplace
+
+frames[nextReplace] = page;
+
+nextReplace = (nextReplace + 1) % frameCount;
+
+}
+
+System.out.printf("%-4d %-6d %-12s %s%n", i, page, "Page Fault", framesToString(frames));
+
+}
+
+}
+
+
+System.out.println("----------------------------------");
+
+System.out.println("Total Page Faults: " + pageFaults);
+
+System.out.println("Total Hits: " + hits);
+
+}
+
+
+// ---------- LRU (preemptive LRU replacement, i.e., replace least recently used) ----------
+
+static void simulateLRU(int[] refs, int frameCount) {
+
+int[] frames = new int[frameCount];
+
+Arrays.fill(frames, -1);
+
+// map page -> last used time (integer increasing)
+
+Map<Integer, Integer> lastUsed = new HashMap<>();
+
+int time = 0;
+
+int pageFaults = 0, hits = 0;
+
+
+System.out.printf("%-4s %-6s %-12s %s%n", "Idx", "Page", "Result", "Frames");
+
+System.out.println("----------------------------------");
+
+for (int i = 0; i < refs.length; i++) {
+
+int page = refs[i];
+
+time++;
+
+boolean hit = false;
+
+for (int f = 0; f < frameCount; f++) if (frames[f] == page) { hit = true; break; }
+
+
+if (hit) {
+
+hits++;
+
+lastUsed.put(page, time);
+
+System.out.printf("%-4d %-6d %-12s %s%n", i, page, "Hit", framesToString(frames));
+
+} else {
+
+pageFaults++;
+
+// if free frame exists, use it
+
+boolean placed = false;
+
+for (int f = 0; f < frameCount; f++) {
+
+if (frames[f] == -1) {
+
+frames[f] = page;
+
+placed = true;
+
+break;
+
+}
+
+}
+
+if (!placed) {
+
+// find least recently used page among frames
+
+int lruIndex = -1;
+
+int lruTime = Integer.MAX_VALUE;
+
+for (int f = 0; f < frameCount; f++) {
+
+int p = frames[f];
+
+int lu = lastUsed.getOrDefault(p, 0);
+
+if (lu < lruTime) {
+
+lruTime = lu;
+
+lruIndex = f;
+
+}
+
+}
+
+// replace LRU frame
+
+frames[lruIndex] = page;
+
+}
+
+lastUsed.put(page, time);
+
+System.out.printf("%-4d %-6d %-12s %s%n", i, page, "Page Fault", framesToString(frames));
+
+}
+
+}
+
+
+System.out.println("----------------------------------");
+
+System.out.println("Total Page Faults: " + pageFaults);
+
+System.out.println("Total Hits: " + hits);
+
+}
+
+
+static String framesToString(int[] frames) {
+
+StringBuilder sb = new StringBuilder("[");
+
+for (int i = 0; i < frames.length; i++) {
+
+if (frames[i] == -1) sb.append(" ");
+
+else sb.append(frames[i]);
+
+if (i < frames.length - 1) sb.append(" ");
+
+}
+
+sb.append("]");
+
+return sb.toString();
+
+}
+
+}
