@@ -1,0 +1,124 @@
+import java.util.*;
+
+
+ class AssemblerPass2 {
+
+public static void main(String[] args) {
+
+// Sample Intermediate Code
+
+String[] intermediateCode = {
+
+"(AD,01)(C,100)",
+
+"(IS,04)(1)(S,1)",
+
+"(IS,01)(2)(S,2)",
+
+"(IS,02)(1)(S,3)",
+
+"(AD,02)"
+
+};
+
+
+// Symbol Table
+
+Map<Integer, Integer> symtab = new HashMap<>();
+
+symtab.put(1, 100); // A
+
+symtab.put(2, 101); // B
+
+symtab.put(3, 102); // C
+
+
+System.out.println("Object Code:");
+
+System.out.println("------------");
+
+
+for (String line : intermediateCode) {
+
+if (line.contains("AD")) {
+
+// Assembler directive → no object code
+
+continue;
+
+}
+
+
+// Parse the line
+
+String opcode = "";
+
+String reg = "0";
+
+String mem = "000";
+
+
+// Extract opcode type
+
+if (line.contains("IS")) {
+
+int start = line.indexOf("IS,") + 3;
+
+int end = line.indexOf(")", start);
+
+opcode = line.substring(start, end);
+
+}
+
+
+// Extract register if present
+
+if (line.contains(")(")) {
+
+String[] parts = line.split("\\)\\(");
+
+if (parts.length > 1 && parts[1].length() > 0) {
+
+reg = parts[1].replace(")", "").replace("(", "").trim();
+
+if (reg.startsWith("S")) reg = "0";
+
+}
+
+}
+
+
+// Extract memory address
+
+if (line.contains("(S,")) {
+
+int start = line.indexOf("(S,") + 3;
+
+int end = line.indexOf(")", start);
+
+int symIndex = Integer.parseInt(line.substring(start, end));
+
+mem = String.valueOf(symtab.get(symIndex));
+
+} else if (line.contains("(C,")) {
+
+int start = line.indexOf("(C,") + 3;
+
+int end = line.indexOf(")", start);
+
+mem = line.substring(start, end);
+
+}
+
+
+// Format the object code
+
+String objectCode = opcode + " " + reg + " " + mem;
+
+System.out.println(objectCode);
+
+}
+
+}
+
+}
