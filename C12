@@ -1,0 +1,27 @@
+import tkinter as tk
+
+def on_click():
+    name = entry.get()
+    if name != "":
+        output.config(text="You typed: " + name, fg="green")
+    else:
+        output.config(text="Please type something!", fg="red")
+
+# main window
+win = tk.Tk()
+win.title("Simple UI")
+win.geometry("350x250")
+
+# widgets
+label = tk.Label(win, text="Enter your name:", font=("Arial", 14))
+entry = tk.Entry(win, font=("Arial", 14))
+btn = tk.Button(win, text="Show", font=("Arial", 14), bg="#007BFF", fg="white", command=on_click)
+output = tk.Label(win, text="", font=("Arial", 14))
+
+# place widgets
+label.pack(pady=10)
+entry.pack(pady=10)
+btn.pack(pady=10)
+output.pack(pady=15)
+
+win.mainloop()
