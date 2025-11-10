@@ -1,0 +1,237 @@
+import java.util.*;
+
+// Class name changed to AssemblerPass1
+class AssemblerPass1 {
+
+    // 1. Data Structures
+    private Map<String, String> mot;    // Mnemonic Opcode Table
+    private List<SymbolEntry> symtab; // Symbol Table
+    private List<LiteralEntry> littab; // Literal Table
+    private int lc;                     // Location Counter
+    private int symIndex;
+    private int litIndex;
+
+    // Helper class for Symbol Table
+    class SymbolEntry {
+        String name;
+        int address;
+        int index;
+
+        SymbolEntry(String name, int address, int index) {
+            this.name = name;
+            this.address = address;
+            this.index = index;
+        }
+        public String toString() { return index + "\t" + name + "\t" + address; }
+    }
+
+    // Helper class for Literal Table
+    class LiteralEntry {
+        String name;
+        int address;
+        int index;
+
+        LiteralEntry(String name, int address, int index) {
+            this.name = name;
+            this.address = address;
+            this.index = index;
+        }
+        public String toString() { return index + "\t" + name + "\t" + address; }
+    }
+
+    // 2. Constructor: Initializes all tables
+    public AssemblerPass1() {
+        mot = new LinkedHashMap<>();
+        symtab = new ArrayList<>();
+        littab = new ArrayList<>();
+        lc = 0;
+        symIndex = 0;
+        litIndex = 0;
+
+        // Imperative Statements (IS)
+        mot.put("ADD", "(IS,01)");
+        mot.put("MOVER", "(IS,04)");
+        mot.put("MOVEM", "(IS,05)");
+        mot.put("STOP", "(IS,00)"); 
+
+        // Assembler Directives (AD)
+        mot.put("START", "(AD,01)");
+        mot.put("END", "(AD,02)");
+
+        // Declarative Statements (DL)
+        mot.put("DC", "(DL,01)");
+        mot.put("DS", "(DL,02)");
+
+        // Registers
+        mot.put("AREG", "(1)");
+        mot.put("BREG", "(2)");
+    }
+
+    // 3. Helper to find a symbol in SYMTAB
+    private SymbolEntry findSymbol(String name) {
+        for (SymbolEntry entry : symtab) {
+            if (entry.name.equals(name)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    // 4. Helper to find a literal in LITTAB
+    private LiteralEntry findLiteral(String name) {
+        for (LiteralEntry entry : littab) {
+            if (entry.name.equals(name)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    // 5. Main method with all logic
+    public static void main(String[] args) {
+        
+        // Create instance to hold tables
+        AssemblerPass1 assembler = new AssemblerPass1();
+        
+        // List to store all input lines
+        List<String> inputCode = new ArrayList<>();
+        // List to store all generated IC lines
+        List<String> intermediateCode = new ArrayList<>();
+        
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Enter Assembly Code (type 'END' and press Enter, then a blank line to finish):");
+        
+        // --- A: Read all input from user ---
+        while (true) {
+            String line = sc.nextLine();
+            if (line.trim().isEmpty()) {
+                // Stop reading on blank line
+                break;
+            }
+            inputCode.add(line.trim());
+            if (line.trim().equals("END")) {
+                // Also stop after END
+                break;
+            }
+        }
+
+        // --- B: Process each line of input ---
+        for (String line : inputCode) {
+            String[] parts = line.split("\\s+");
+            String label = null;
+            int partIndex = 0;
+
+            // Handle Label
+            if (!assembler.mot.containsKey(parts[0])) {
+                label = parts[0];
+                partIndex = 1; 
+
+                SymbolEntry entry = assembler.findSymbol(label);
+                if (entry == null) {
+                    assembler.symtab.add(assembler.new SymbolEntry(label, assembler.lc, assembler.symIndex++));
+                } else {
+                    entry.address = assembler.lc;
+                }
+            }
+
+            // Process Instruction and Operands
+            String instruction = parts[partIndex];
+            String[] operands = new String[2];
+
+            if (parts.length > partIndex + 1) {
+                String[] operandParts = parts[partIndex + 1].split(",");
+                operands[0] = operandParts[0];
+                if (operandParts.length > 1) {
+                    operands[1] = operandParts[1];
+                }
+            }
+
+            // Generate IC
+            StringBuilder ic = new StringBuilder();
+
+            if (instruction.equals("START")) {
+                assembler.lc = Integer.parseInt(operands[0]);
+                ic.append(assembler.mot.get("START")).append(" (C,").append(operands[0]).append(")");
+            
+            } else if (instruction.equals("END")) {
+                ic.append(assembler.mot.get("END"));
+                intermediateCode.add(ic.toString()); // Add END directive
+                
+                // Process literals now
+                for (LiteralEntry entry : assembler.littab) {
+                    if (entry.address == 0) { 
+                        entry.address = assembler.lc;
+                        String litValue = entry.name.substring(2, entry.name.length() - 1);
+                        intermediateCode.add("(DL,01) (C," + litValue + ")");
+                        assembler.lc++;
+                    }
+                }
+                break; // Stop processing
+
+            } else if (instruction.equals("DC")) {
+                ic.append(assembler.mot.get("DC")).append(" (C,").append(operands[0]).append(")");
+                assembler.lc++; 
+            
+            } else if (instruction.equals("DS")) {
+                int size = Integer.parseInt(operands[0]);
+                ic.append(assembler.mot.get("DS")).append(" (C,").append(size).append(")");
+                assembler.lc += size; 
+            
+            } else if (assembler.mot.containsKey(instruction)) { // Imperative Statement
+                ic.append(assembler.mot.get(instruction)).append(" ");
+
+                for (String operand : operands) {
+                    if (operand == null) break;
+
+                    if (assembler.mot.containsKey(operand)) {
+                        // Register
+                        ic.append(assembler.mot.get(operand)).append(" ");
+                    } else if (operand.startsWith("='")) {
+                        // Literal
+                        LiteralEntry entry = assembler.findLiteral(operand);
+                        if (entry == null) {
+                            entry = assembler.new LiteralEntry(operand, 0, assembler.litIndex++);
+                            assembler.littab.add(entry);
+                        }
+                        ic.append("(L,").append(entry.index).append(")");
+                    } else {
+                        // Symbol
+                        SymbolEntry entry = assembler.findSymbol(operand);
+                        if (entry == null) {
+                            entry = assembler.new SymbolEntry(operand, 0, assembler.symIndex++);
+                            assembler.symtab.add(entry);
+                        }
+                        ic.append("(S,").append(entry.index).append(")");
+                    }
+                }
+                assembler.lc++;
+            }
+            
+            // Add the generated IC line to our list
+            intermediateCode.add(ic.toString().trim());
+        }
+
+        // --- C: Print all outputs to the console ---
+        
+        System.out.println("\n--- Intermediate Code ---");
+        for (String icLine : intermediateCode) {
+            System.out.println(icLine);
+        }
+        
+        System.out.println("\n--- Symbol Table ---");
+        System.out.println("Index\tSymbol\tAddress");
+        System.out.println("-----------------------");
+        for (SymbolEntry entry : assembler.symtab) {
+            System.out.println(entry);
+        }
+
+        System.out.println("\n--- Literal Table ---");
+        System.out.println("Index\tLiteral\tAddress");
+        System.out.println("-----------------------");
+        for (LiteralEntry entry : assembler.littab) {
+            System.out.println(entry);
+        }
+        
+        sc.close();
+    }
+}
