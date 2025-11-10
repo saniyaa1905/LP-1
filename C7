@@ -1,0 +1,206 @@
+import java.util.*;
+
+// Class to represent a memory block
+class Block {
+    int id;
+    int size;
+    boolean allocated;
+    int processId; // ID of the process allocated to this block
+
+    Block(int id, int size) {
+        this.id = id;
+        this.size = size;
+        this.allocated = false;
+        this.processId = -1;
+    }
+
+    // Creates a deep copy for safe simulation resets
+    Block(Block original) {
+        this.id = original.id;
+        this.size = original.size;
+        this.allocated = original.allocated;
+        this.processId = original.processId;
+    }
+}
+
+class MemoryPlacement {
+
+    public static void main(String[] args) {
+        // Sample Input
+        List<Integer> blockSizes = Arrays.asList(100, 500, 200, 300, 600);
+        List<Integer> processSizes = Arrays.asList(212, 417, 112, 426);
+        List<String> processNames = Arrays.asList("P1", "P2", "P3", "P4");
+
+        // Prepare the initial memory blocks
+        List<Block> initialBlocks = new ArrayList<>();
+        for (int i = 0; i < blockSizes.size(); i++) {
+            initialBlocks.add(new Block(i + 1, blockSizes.get(i)));
+        }
+
+        System.out.println("--- Memory Placement Strategies Simulation ---");
+
+        // 1. First Fit
+        System.out.println("\n\n--- 1. FIRST FIT ---");
+        firstFit(copyBlocks(initialBlocks), processSizes, processNames);
+
+        // 2. Best Fit
+        System.out.println("\n\n--- 2. BEST FIT ---");
+        bestFit(copyBlocks(initialBlocks), processSizes, processNames);
+
+        // 3. Next Fit
+        System.out.println("\n\n--- 3. NEXT FIT ---");
+        nextFit(copyBlocks(initialBlocks), processSizes, processNames);
+    }
+
+    // Helper to create a deep copy of the block list for independent simulations
+    private static List<Block> copyBlocks(List<Block> original) {
+        List<Block> copy = new ArrayList<>();
+        for (Block b : original) {
+            copy.add(new Block(b));
+        }
+        return copy;
+    }
+
+    // --- 1. FIRST FIT ALGORITHM ---
+    public static void firstFit(List<Block> blocks, List<Integer> processSizes, List<String> processNames) {
+        List<AllocationResult> results = new ArrayList<>();
+        
+        for (int i = 0; i < processSizes.size(); i++) {
+            int processSize = processSizes.get(i);
+            String processName = processNames.get(i);
+            boolean allocated = false;
+
+            for (Block block : blocks) {
+                // Find the FIRST block that is large enough and unallocated
+                if (!block.allocated && block.size >= processSize) {
+                    block.allocated = true;
+                    block.processId = i + 1;
+                    int unusedSpace = block.size - processSize;
+                    
+                    results.add(new AllocationResult(processName, processSize, block.id, block.size, unusedSpace));
+                    allocated = true;
+                    break;
+                }
+            }
+            if (!allocated) {
+                results.add(new AllocationResult(processName, processSize, -1, 0, 0));
+            }
+        }
+        printResults(results);
+    }
+
+    // --- 2. BEST FIT ALGORITHM ---
+    public static void bestFit(List<Block> blocks, List<Integer> processSizes, List<String> processNames) {
+        List<AllocationResult> results = new ArrayList<>();
+
+        for (int i = 0; i < processSizes.size(); i++) {
+            int processSize = processSizes.get(i);
+            String processName = processNames.get(i);
+            int bestBlockIndex = -1;
+            int smallestDifference = Integer.MAX_VALUE;
+
+            // Find the BEST block: the one that leaves the smallest unused space (smallest difference)
+            for (int j = 0; j < blocks.size(); j++) {
+                Block block = blocks.get(j);
+                if (!block.allocated && block.size >= processSize) {
+                    int difference = block.size - processSize;
+                    
+                    if (difference < smallestDifference) {
+                        smallestDifference = difference;
+                        bestBlockIndex = j;
+                    }
+                }
+            }
+
+            if (bestBlockIndex != -1) {
+                Block bestBlock = blocks.get(bestBlockIndex);
+                bestBlock.allocated = true;
+                bestBlock.processId = i + 1;
+                int unusedSpace = bestBlock.size - processSize;
+                
+                results.add(new AllocationResult(processName, processSize, bestBlock.id, bestBlock.size, unusedSpace));
+            } else {
+                results.add(new AllocationResult(processName, processSize, -1, 0, 0));
+            }
+        }
+        printResults(results);
+    }
+
+    // --- 3. NEXT FIT ALGORITHM ---
+    // Tracks the index of the last allocated block
+    private static int lastAllocatedIndex = -1; 
+    
+    public static void nextFit(List<Block> blocks, List<Integer> processSizes, List<String> processNames) {
+        List<AllocationResult> results = new ArrayList<>();
+        lastAllocatedIndex = -1; // Reset index for start of simulation
+
+        for (int i = 0; i < processSizes.size(); i++) {
+            int processSize = processSizes.get(i);
+            String processName = processNames.get(i);
+            boolean allocated = false;
+            int n = blocks.size();
+            
+            // Start searching from the block AFTER the last allocated one
+            int startIndex = (lastAllocatedIndex + 1) % n; 
+            int currentBlockIndex = startIndex;
+            
+            // Loop through all blocks, wrapping around if necessary
+            for (int k = 0; k < n; k++) {
+                Block block = blocks.get(currentBlockIndex);
+
+                if (!block.allocated && block.size >= processSize) {
+                    block.allocated = true;
+                    block.processId = i + 1;
+                    int unusedSpace = block.size - processSize;
+                    
+                    results.add(new AllocationResult(processName, processSize, block.id, block.size, unusedSpace));
+                    lastAllocatedIndex = currentBlockIndex; // Update the starting point for the next process
+                    allocated = true;
+                    break;
+                }
+                
+                // Move to the next block, wrapping around
+                currentBlockIndex = (currentBlockIndex + 1) % n;
+            }
+
+            if (!allocated) {
+                results.add(new AllocationResult(processName, processSize, -1, 0, 0));
+            }
+        }
+        printResults(results);
+    }
+
+
+    // --- Allocation Result Class for Formatting ---
+    private static class AllocationResult {
+        String processName;
+        int processSize;
+        int blockId;
+        int blockSize;
+        int unusedSpace;
+
+        public AllocationResult(String processName, int processSize, int blockId, int blockSize, int unusedSpace) {
+            this.processName = processName;
+            this.processSize = processSize;
+            this.blockId = blockId;
+            this.blockSize = blockSize;
+            this.unusedSpace = unusedSpace;
+        }
+    }
+
+    // --- Print Function ---
+    public static void printResults(List<AllocationResult> results) {
+        System.out.printf("%-10s %-20s %-10s %-20s %-20s%n",
+                          "Process", "Process Size (KB)", "Block No", "Block Size (KB)", "Unused Space (KB)");
+        System.out.println("----------------------------------------------------------------------------------");
+        
+        for (AllocationResult res : results) {
+            String blockIdStr = (res.blockId != -1) ? String.valueOf(res.blockId) : "Not Allocated";
+            String blockSizeStr = (res.blockId != -1) ? String.valueOf(res.blockSize) : "N/A";
+            String unusedSpaceStr = (res.blockId != -1) ? String.valueOf(res.unusedSpace) : "N/A";
+
+            System.out.printf("%-10s %-20d %-10s %-20s %-20s%n",
+                              res.processName, res.processSize, blockIdStr, blockSizeStr, unusedSpaceStr);
+        }
+    }
+}
