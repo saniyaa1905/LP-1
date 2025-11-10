@@ -1,0 +1,273 @@
+import java.util.*;
+
+
+public class MemoryPlacement {
+
+
+static class Block {
+
+int size;
+
+int originalSize;
+
+boolean allocated;
+
+
+Block(int size) {
+
+this.size = size;
+
+this.originalSize = size;
+
+this.allocated = false;
+
+}
+
+}
+
+
+static class Allocation {
+
+String process;
+
+int processSize;
+
+int blockNo;
+
+int blockSize;
+
+int unused;
+
+
+Allocation(String process, int processSize, int blockNo, int blockSize, int unused) {
+
+this.process = process;
+
+this.processSize = processSize;
+
+this.blockNo = blockNo;
+
+this.blockSize = blockSize;
+
+this.unused = unused;
+
+}
+
+}
+
+
+public static void main(String[] args) {
+
+// Sample Input
+
+int[] blockSizes = {100, 500, 200, 300, 600};
+
+int[] processSizes = {212, 417, 112, 426};
+
+
+System.out.println("\n========== FIRST FIT ==========");
+
+firstFit(blockSizes, processSizes);
+
+
+System.out.println("\n========== NEXT FIT ==========");
+
+nextFit(blockSizes, processSizes);
+
+
+System.out.println("\n========== WORST FIT ==========");
+
+worstFit(blockSizes, processSizes);
+
+}
+
+
+// ---------- FIRST FIT ----------
+
+public static void firstFit(int[] blockSizes, int[] processSizes) {
+
+Block[] blocks = new Block[blockSizes.length];
+
+for (int i = 0; i < blockSizes.length; i++)
+
+blocks[i] = new Block(blockSizes[i]);
+
+
+List<Allocation> allocations = new ArrayList<>();
+
+
+for (int i = 0; i < processSizes.length; i++) {
+
+boolean allocated = false;
+
+for (int j = 0; j < blocks.length; j++) {
+
+if (!blocks[j].allocated && blocks[j].size >= processSizes[i]) {
+
+allocations.add(new Allocation("P" + (i + 1), processSizes[i],
+
+j + 1, blocks[j].originalSize, blocks[j].size - processSizes[i]));
+
+blocks[j].allocated = true;
+
+allocated = true;
+
+break;
+
+}
+
+}
+
+if (!allocated)
+
+allocations.add(new Allocation("P" + (i + 1), processSizes[i], -1, 0, 0));
+
+}
+
+
+printTable(allocations);
+
+}
+
+
+// ---------- NEXT FIT ----------
+
+public static void nextFit(int[] blockSizes, int[] processSizes) {
+
+Block[] blocks = new Block[blockSizes.length];
+
+for (int i = 0; i < blockSizes.length; i++)
+
+blocks[i] = new Block(blockSizes[i]);
+
+
+List<Allocation> allocations = new ArrayList<>();
+
+int lastPos = 0;
+
+
+for (int i = 0; i < processSizes.length; i++) {
+
+boolean allocated = false;
+
+int count = 0;
+
+while (count < blocks.length) {
+
+int j = (lastPos + count) % blocks.length;
+
+if (!blocks[j].allocated && blocks[j].size >= processSizes[i]) {
+
+allocations.add(new Allocation("P" + (i + 1), processSizes[i],
+
+j + 1, blocks[j].originalSize, blocks[j].size - processSizes[i]));
+
+blocks[j].allocated = true;
+
+lastPos = (j + 1) % blocks.length;
+
+allocated = true;
+
+break;
+
+}
+
+count++;
+
+}
+
+if (!allocated)
+
+allocations.add(new Allocation("P" + (i + 1), processSizes[i], -1, 0, 0));
+
+}
+
+
+printTable(allocations);
+
+}
+
+
+// ---------- WORST FIT ----------
+
+public static void worstFit(int[] blockSizes, int[] processSizes) {
+
+Block[] blocks = new Block[blockSizes.length];
+
+for (int i = 0; i < blockSizes.length; i++)
+
+blocks[i] = new Block(blockSizes[i]);
+
+
+List<Allocation> allocations = new ArrayList<>();
+
+
+for (int i = 0; i < processSizes.length; i++) {
+
+int worstIdx = -1;
+
+for (int j = 0; j < blocks.length; j++) {
+
+if (!blocks[j].allocated && blocks[j].size >= processSizes[i]) {
+
+if (worstIdx == -1 || blocks[j].size > blocks[worstIdx].size)
+
+worstIdx = j;
+
+}
+
+}
+
+
+if (worstIdx != -1) {
+
+allocations.add(new Allocation("P" + (i + 1), processSizes[i],
+
+worstIdx + 1, blocks[worstIdx].originalSize, blocks[worstIdx].size - processSizes[i]));
+
+blocks[worstIdx].allocated = true;
+
+} else {
+
+allocations.add(new Allocation("P" + (i + 1), processSizes[i], -1, 0, 0));
+
+}
+
+}
+
+
+printTable(allocations);
+
+}
+
+
+// ---------- PRINT TABLE ----------
+
+public static void printTable(List<Allocation> allocations) {
+
+System.out.printf("%-10s %-15s %-10s %-15s %-15s%n",
+
+"Process", "Process Size(KB)", "Block No", "Block Size(KB)", "Unused Space(KB)");
+
+System.out.println("--------------------------------------------------------------------------");
+
+
+for (Allocation a : allocations) {
+
+if (a.blockNo != -1)
+
+System.out.printf("%-10s %-15d %-10d %-15d %-15d%n",
+
+a.process, a.processSize, a.blockNo, a.blockSize, a.unused);
+
+else
+
+System.out.printf("%-10s %-15d %-10s %-15s %-15s%n",
+
+a.process, a.processSize, "Not Allocated", "-", "-");
+
+}
+
+}
+
+}
