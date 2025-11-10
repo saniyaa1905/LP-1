@@ -1,0 +1,90 @@
+import java.util.*;
+
+
+ class MacroPass2 {
+
+public static void main(String[] args) {
+
+// ----- MNT -----
+
+Map<String, Integer> MNT = new LinkedHashMap<>();
+
+MNT.put("INCR", 1); // Macro name → starting index in MDT
+
+
+// ----- MDT -----
+
+List<String> MDT = new ArrayList<>();
+
+MDT.add("ADD &A, =1");
+
+MDT.add("MEND");
+
+
+// ----- Intermediate Code -----
+
+String[] intermediateCode = {
+
+"START",
+
+"INCR DATA",
+
+"END"
+
+};
+
+
+System.out.println("Expanded Code (After Macro Expansion):");
+
+System.out.println("--------------------------------------");
+
+
+for (String line : intermediateCode) {
+
+String[] parts = line.split(" ");
+
+String first = parts[0];
+
+
+// Check if the line is a macro call
+
+if (MNT.containsKey(first)) {
+
+int mdtIndex = MNT.get(first) - 1; // MDT index is 1-based
+
+
+// Get macro parameter
+
+String arg = (parts.length > 1) ? parts[1] : "";
+
+
+// Expand macro from MDT until MEND
+
+for (int i = mdtIndex; i < MDT.size(); i++) {
+
+String mdtLine = MDT.get(i);
+
+if (mdtLine.equalsIgnoreCase("MEND")) break;
+
+
+// Replace argument in macro body
+
+String expanded = mdtLine.replace("&A", arg);
+
+System.out.println(expanded);
+
+}
+
+} else {
+
+// Not a macro line, print as-is
+
+System.out.println(line);
+
+}
+
+}
+
+}
+
+}
